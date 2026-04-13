@@ -1,3 +1,5 @@
 streamlit
-pandas
 sqlalchemy
+pandas
+reportlab
+python-dateutil
