@@ -339,25 +339,32 @@ def export_all_invoices_pdf():
 
 # ---------------- WHATSAPP ----------------
 
-def send_whatsapp_reminder(invoice):
+import urllib.parse
 
-    phone = str(invoice.client_phone)
+def generate_whatsapp_link(invoice, company_profile):
 
-    message = (
+    phone = invoice.client_phone
 
-        f"Hello {invoice.client_name}, "
-        f"Invoice {invoice.invoice_number} "
-        f"of ₹{invoice.amount} "
-        f"is due on {invoice.due_date}. "
-        f"Please clear payment."
+    message = f"""
+Hello {invoice.client_name},
 
-    )
+This is a reminder for your invoice.
 
-    encoded = urllib.parse.quote(message)
+Invoice Number: {invoice.invoice_number}
+Amount: ₹{invoice.amount}
+Due Date: {invoice.due_date}
 
-    url = f"https://wa.me/{phone}?text={encoded}"
+Please make the payment at your earliest convenience.
 
-    webbrowser.open(url)
+Regards,
+{company_profile.get("company_name", "Your Company")}
+"""
+
+    encoded_message = urllib.parse.quote(message)
+
+    whatsapp_url = f"https://wa.me/{phone}?text={encoded_message}"
+
+    return whatsapp_url
 
 
 # ---------------- FACTORY RESET ----------------

@@ -3,6 +3,12 @@ from datetime import date
 
 from database import engine
 from models import Base
+from models import (
+    add_invoice,
+    get_all_invoices,
+    mark_invoice_paid,
+    delete_invoice
+)
 from utils import generate_invoice_pdf
 from utils import (
     add_invoice,
@@ -10,7 +16,6 @@ from utils import (
     delete_invoice,
     mark_paid,
     export_all_invoices_pdf,
-    send_whatsapp_reminder,
     load_company_profile,
     save_company_profile,
     generate_invoice_pdf,
@@ -161,40 +166,30 @@ def invoice_list():
 
     st.header("All Invoices")
 
-    invoices = get_invoices()
+    invoices = get_all_invoices()
 
     if not invoices:
-
-        st.info("No invoices yet")
-
+        st.info("No invoices found.")
         return
+
+    company_profile = load_company_profile()
 
     for inv in invoices:
 
         overdue_days = get_overdue_days(inv)
 
-        c1, c2, c3, c4, c5, c6, c7, c8 = st.columns(8)
+        c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
 
-        # Invoice Number
         c1.write(inv.invoice_number)
-
-        # Client
         c2.write(inv.client_name)
+        c3.write(f"₹ {inv.amount}")
 
-        # Amount
-        c3.write(inv.amount)
-
-        # Status Color
+        # Status display
         if inv.status == "Paid":
-
             c4.success("Paid")
-
         elif overdue_days > 0:
-
-            c4.error(f"Overdue {overdue_days} days")
-
+            c4.error(f"Overdue ({overdue_days}d)")
         else:
-
             c4.warning("Pending")
 
         # Mark Paid
@@ -202,9 +197,7 @@ def invoice_list():
             "Mark Paid",
             key=f"paid_{inv.id}"
         ):
-
-            mark_paid(inv.id)
-
+            mark_invoice_paid(inv.id)
             st.rerun()
 
         # Delete
@@ -212,35 +205,76 @@ def invoice_list():
             "Delete",
             key=f"delete_{inv.id}"
         ):
-
             delete_invoice(inv.id)
-
             st.rerun()
 
-        # Send WhatsApp Reminder
+        # Send Reminder Button
         if c7.button(
             "Send Reminder",
             key=f"rem_{inv.id}"
         ):
 
-            send_whatsapp_reminder(inv)
+            import urllib.parse
 
-        # Download Single Invoice PDF
+            phone = str(inv.client_phone)
+
+            # Ensure international format
+            if not phone.startswith("91"):
+                phone = "91" + phone
+
+            message = f"""
+Hello {inv.client_name},
+
+This is a reminder for your invoice.
+
+Invoice Number: {inv.invoice_number}
+Amount: ₹{inv.amount}
+Due Date: {inv.due_date}
+
+Please make the payment at your earliest convenience.
+
+Regards,
+{company_profile.get("company_name", "Your Company")}
+"""
+
+            encoded_message = urllib.parse.quote(message)
+
+            whatsapp_link = (
+                f"https://wa.me/{phone}?text={encoded_message}"
+            )
+
+            st.markdown(
+                f"""
+                <a href="{whatsapp_link}" target="_blank">
+                    <button style="
+                        background-color:#25D366;
+                        color:white;
+                        padding:8px 16px;
+                        border:none;
+                        border-radius:6px;
+                        cursor:pointer;
+                        font-weight:bold;
+                    ">
+                    Open WhatsApp Reminder
+                    </button>
+                </a>
+                """,
+                unsafe_allow_html=True
+            )
+
+        # Download PDF (single invoice)
         pdf_data = generate_invoice_pdf(inv)
+        
 
-        c8.download_button(
-
+        st.download_button(
             label="Download PDF",
-
             data=pdf_data,
-
             file_name=f"{inv.invoice_number}.pdf",
-
             mime="application/pdf",
-
             key=f"pdf_{inv.id}"
-
         )
+
+        st.divider()
 
 def company_settings():
 
