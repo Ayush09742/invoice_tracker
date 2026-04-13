@@ -29,8 +29,8 @@ st.set_page_config(
     layout="wide",
 )
 
-USERNAME = "Pennywise"
-PASSWORD = "9451"
+USERNAME = "admin"
+PASSWORD = "1234"
 
 
 if "logged_in" not in st.session_state:
