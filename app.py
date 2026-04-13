@@ -30,7 +30,7 @@ st.set_page_config(
 )
 
 USERNAME = "admin"
-PASSWORD = "1234"
+PASSWORD = "94517"
 
 
 if "logged_in" not in st.session_state:
@@ -53,7 +53,7 @@ def login_screen():
     )
 
     # credentials (single line as requested)
-    USERNAME, PASSWORD = "admin", "1234"
+    USERNAME, PASSWORD = "admin", "94517"
 
     if st.button("Login", key="login_btn"):
 
