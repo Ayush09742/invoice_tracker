@@ -23,8 +23,6 @@ class Invoice(Base):
     status = Column(String)
 
     created_at = Column(DateTime)
-    from database import SessionLocal
-from datetime import datetime
 from database import SessionLocal
 from datetime import datetime
 
@@ -105,6 +103,8 @@ def delete_invoice(invoice_id):
         session.commit()
 
     session.close()
+    from database import SessionLocal
+from datetime import datetime
 
 
 def add_invoice(

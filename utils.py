@@ -15,85 +15,6 @@ from reportlab.platypus import (
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.lib import colors
-def generate_invoice_pdf(invoice):
-
-    company = load_company_profile()
-
-    buffer = BytesIO()
-
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=(8.27 * inch, 11.69 * inch),
-        rightMargin=40,
-        leftMargin=40,
-        topMargin=40,
-        bottomMargin=60,
-    )
-
-    styles = getSampleStyleSheet()
-
-    elements = []
-
-    header = Paragraph(
-        f"""
-        <b>{company.get("name")}</b><br/>
-        {company.get("email")}<br/>
-        {company.get("contact")}<br/>
-        GST: {company.get("gst")}
-        """,
-        styles["Normal"],
-    )
-
-    elements.append(header)
-    elements.append(Spacer(1, 20))
-
-    title = Paragraph(
-        "<para align=center><font size=18><b>INVOICE</b></font></para>",
-        styles["Normal"],
-    )
-
-    elements.append(title)
-    elements.append(Spacer(1, 25))
-
-    data = [
-        ["Invoice Number", invoice.invoice_number],
-        ["Client Name", invoice.client_name],
-        ["Amount", f"₹ {invoice.amount}"],
-        ["Invoice Date", str(invoice.date)],
-        ["Due Date", str(invoice.due_date)],
-        ["Status", invoice.status],
-    ]
-
-    table = Table(data, colWidths=[180, 300])
-
-    table.setStyle(
-        TableStyle(
-            [
-                ("BOX", (0, 0), (-1, -1), 1, colors.black),
-                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
-            ]
-        )
-    )
-
-    elements.append(table)
-    elements.append(Spacer(1, 50))
-
-    footer = Paragraph(
-        "<para alignment='right'>"
-        "<font size=9 color=grey>"
-        "Powered by Pennywise"
-        "</font>"
-        "</para>",
-        styles["Normal"],
-    )
-
-    elements.append(footer)
-
-    doc.build(elements)
-
-    buffer.seek(0)
-
-    return buffer
 
 from database import SessionLocal, engine
 from models import Invoice, Base
@@ -275,7 +196,85 @@ def get_client_ledger(name):
         .filter(Invoice.client_name == name)
         .all()
     )
+def generate_invoice_pdf(invoice):
 
+    company = load_company_profile()
+
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=(8.27 * inch, 11.69 * inch),
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=40,
+        bottomMargin=60,
+    )
+
+    styles = getSampleStyleSheet()
+
+    elements = []
+
+    header = Paragraph(
+        f"""
+        <b>{company.get("name")}</b><br/>
+        {company.get("email")}<br/>
+        {company.get("contact")}<br/>
+        GST: {company.get("gst")}
+        """,
+        styles["Normal"],
+    )
+
+    elements.append(header)
+    elements.append(Spacer(1, 20))
+
+    title = Paragraph(
+        "<para align=center><font size=18><b>INVOICE</b></font></para>",
+        styles["Normal"],
+    )
+
+    elements.append(title)
+    elements.append(Spacer(1, 25))
+
+    data = [
+        ["Invoice Number", invoice.invoice_number],
+        ["Client Name", invoice.client_name],
+        ["Amount", f"₹ {invoice.amount}"],
+        ["Invoice Date", str(invoice.date)],
+        ["Due Date", str(invoice.due_date)],
+        ["Status", invoice.status],
+    ]
+
+    table = Table(data, colWidths=[180, 300])
+
+    table.setStyle(
+        TableStyle(
+            [
+                ("BOX", (0, 0), (-1, -1), 1, colors.black),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ]
+        )
+    )
+
+    elements.append(table)
+    elements.append(Spacer(1, 50))
+
+    footer = Paragraph(
+        "<para alignment='right'>"
+        "<font size=9 color=grey>"
+        "Powered by Pennywise"
+        "</font>"
+        "</para>",
+        styles["Normal"],
+    )
+
+    elements.append(footer)
+
+    doc.build(elements)
+
+    buffer.seek(0)
+
+    return buffer
 
 # ---------------- EXPORT ALL PDF ----------------
 
@@ -339,32 +338,25 @@ def export_all_invoices_pdf():
 
 # ---------------- WHATSAPP ----------------
 
-import urllib.parse
+def send_whatsapp_reminder(invoice):
 
-def generate_whatsapp_link(invoice, company_profile):
+    phone = str(invoice.client_phone)
 
-    phone = invoice.client_phone
+    message = (
 
-    message = f"""
-Hello {invoice.client_name},
+        f"Hello {invoice.client_name}, "
+        f"Invoice {invoice.invoice_number} "
+        f"of ₹{invoice.amount} "
+        f"is due on {invoice.due_date}. "
+        f"Please clear payment."
 
-This is a reminder for your invoice.
+    )
 
-Invoice Number: {invoice.invoice_number}
-Amount: ₹{invoice.amount}
-Due Date: {invoice.due_date}
+    encoded = urllib.parse.quote(message)
 
-Please make the payment at your earliest convenience.
+    url = f"https://wa.me/{phone}?text={encoded}"
 
-Regards,
-{company_profile.get("company_name", "Your Company")}
-"""
-
-    encoded_message = urllib.parse.quote(message)
-
-    whatsapp_url = f"https://wa.me/{phone}?text={encoded_message}"
-
-    return whatsapp_url
+    webbrowser.open(url)
 
 
 # ---------------- FACTORY RESET ----------------
@@ -384,3 +376,4 @@ def reset_database():
             pass
 
     Base.metadata.create_all(bind=engine)
+    

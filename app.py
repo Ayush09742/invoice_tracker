@@ -9,23 +9,19 @@ from models import (
     mark_invoice_paid,
     delete_invoice
 )
-from utils import generate_invoice_pdf
 from utils import (
     add_invoice,
     get_invoices,
     delete_invoice,
-    mark_paid,
+    generate_invoice_pdf,
     export_all_invoices_pdf,
+    get_overdue_days,
     load_company_profile,
     save_company_profile,
-    generate_invoice_pdf,
     reset_database,
-    get_overdue_days,
     get_monthly_total,
-    export_all_invoices_pdf,
-    get_overdue_days,
+    
 )
-
 Base.metadata.create_all(bind=engine)
 
 st.set_page_config(
@@ -35,7 +31,7 @@ st.set_page_config(
 )
 
 USERNAME = "admin"
-PASSWORD = "94517"
+PASSWORD = "1234"
 
 
 if "logged_in" not in st.session_state:
@@ -48,17 +44,14 @@ def login_screen():
 
     username = st.text_input(
         "Username",
-        key="login_user"
+        key="login_user",
     )
 
     password = st.text_input(
         "Password",
         type="password",
-        key="login_pass"
+        key="login_pass",
     )
-
-    # credentials (single line as requested)
-    USERNAME, PASSWORD = "admin", "94517"
 
     if st.button("Login", key="login_btn"):
 
@@ -83,7 +76,6 @@ def dashboard():
     inv for inv in get_invoices()
     if get_overdue_days(inv) > 0
 ]
-
     total = get_monthly_total()
 
     c1, c2, c3 = st.columns(3)
@@ -106,7 +98,6 @@ def dashboard():
         mime="application/pdf",
         key="download_all_pdf"
     )
-
 
 def add_invoice_section():
 
@@ -161,6 +152,30 @@ def add_invoice_section():
 
         st.rerun()
 
+
+def invoice_list():
+
+    st.header("All Invoices")
+
+    invoices = get_invoices()
+
+    if not invoices:
+
+        st.info("No invoices yet")
+
+        return
+
+def invoice_list():
+
+    st.header("All Invoices")
+
+    invoices = get_invoices()
+
+    if not invoices:
+
+        st.info("No invoices yet")
+
+        return
 
 def invoice_list():
 
@@ -264,7 +279,6 @@ Regards,
 
         # Download PDF (single invoice)
         pdf_data = generate_invoice_pdf(inv)
-        
 
         st.download_button(
             label="Download PDF",
@@ -275,17 +289,11 @@ Regards,
         )
 
         st.divider()
-
 def company_settings():
 
     st.header("Company Settings")
 
     profile = load_company_profile()
-    payment_link = st.text_input(
-    "Payment Link",
-    value=profile.get("payment_link"),
-    key="company_payment"
-)
 
     name = st.text_input(
         "Company Name",
