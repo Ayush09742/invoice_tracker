@@ -31,7 +31,7 @@ st.set_page_config(
 )
 
 USERNAME = "admin"
-PASSWORD = "1234"
+PASSWORD = "9451"
 
 
 if "logged_in" not in st.session_state:
