@@ -196,6 +196,66 @@ def get_client_ledger(name):
         .filter(Invoice.client_name == name)
         .all()
     )
+
+
+# ---------------- EXPORT ALL PDF ----------------
+
+def export_all_invoices_pdf():
+
+    invoices = get_invoices()
+
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=(8.27 * inch, 11.69 * inch),
+    )
+
+    styles = getSampleStyleSheet()
+
+    elements = []
+
+    elements.append(
+        Paragraph(
+            "<b>All Invoices Report</b>",
+            styles["Title"],
+        )
+    )
+
+    elements.append(Spacer(1, 20))
+
+    data = [["Invoice", "Client", "Amount", "Status"]]
+
+    for inv in invoices:
+
+        data.append([
+            inv.invoice_number,
+            inv.client_name,
+            inv.amount,
+            inv.status
+        ])
+
+    table = Table(data)
+
+    table.setStyle(
+
+        TableStyle(
+
+            [
+                ("GRID", (0, 0), (-1, -1), 1, colors.black)
+            ]
+
+        )
+
+    )
+
+    elements.append(table)
+
+    doc.build(elements)
+
+    buffer.seek(0)
+
+    return buffer
 def generate_invoice_pdf(invoice):
 
     company = load_company_profile()
@@ -276,104 +336,98 @@ def generate_invoice_pdf(invoice):
 
     return buffer
 
-# ---------------- EXPORT ALL PDF ----------------
-
-def export_all_invoices_pdf():
-
-    invoices = get_invoices()
-
-    buffer = BytesIO()
-
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=(8.27 * inch, 11.69 * inch),
-    )
-
-    styles = getSampleStyleSheet()
-
-    elements = []
-
-    elements.append(
-        Paragraph(
-            "<b>All Invoices Report</b>",
-            styles["Title"],
-        )
-    )
-
-    elements.append(Spacer(1, 20))
-
-    data = [["Invoice", "Client", "Amount", "Status"]]
-
-    for inv in invoices:
-
-        data.append([
-            inv.invoice_number,
-            inv.client_name,
-            inv.amount,
-            inv.status
-        ])
-
-    table = Table(data)
-
-    table.setStyle(
-
-        TableStyle(
-
-            [
-                ("GRID", (0, 0), (-1, -1), 1, colors.black)
-            ]
-
-        )
-
-    )
-
-    elements.append(table)
-
-    doc.build(elements)
-
-    buffer.seek(0)
-
-    return buffer
-
 
 # ---------------- WHATSAPP ----------------
 
-def send_whatsapp_reminder(invoice):
+import urllib.parse
 
-    phone = str(invoice.client_phone)
+def generate_whatsapp_link(invoice, company_profile):
 
-    message = (
+    phone = invoice.client_phone
 
-        f"Hello {invoice.client_name}, "
-        f"Invoice {invoice.invoice_number} "
-        f"of ₹{invoice.amount} "
-        f"is due on {invoice.due_date}. "
-        f"Please clear payment."
+    message = f"""
+Hello {invoice.client_name},
 
-    )
+This is a reminder for your invoice.
 
-    encoded = urllib.parse.quote(message)
+Invoice Number: {invoice.invoice_number}
+Amount: ₹{invoice.amount}
+Due Date: {invoice.due_date}
 
-    url = f"https://wa.me/{phone}?text={encoded}"
+Please make the payment at your earliest convenience.
 
-    webbrowser.open(url)
+Regards,
+{company_profile.get("company_name", "Your Company")}
+"""
 
+    encoded_message = urllib.parse.quote(message)
 
+    whatsapp_url = f"https://wa.me/{phone}?text={encoded_message}"
+
+    return whatsapp_url
+def clear_company_settings():
+
+    import os
+
+    PROFILE_FILE = "company_profile.json"
+
+    try:
+
+        if os.path.exists(PROFILE_FILE):
+
+            os.remove(PROFILE_FILE)
+
+            print("Company profile deleted")
+
+        else:
+
+            print("Company profile file not found")
+
+        return True
+
+    except Exception as e:
+
+        print("CLEAR COMPANY SETTINGS ERROR:", e)
+
+        return False
+
+    
 # ---------------- FACTORY RESET ----------------
 
 def reset_database():
 
+    import sqlite3
+
+    DB_FILE = "invoice.db"
+
     try:
-        engine.dispose()
-    except:
-        pass
 
-    if os.path.exists(DB_FILE):
+        conn = sqlite3.connect(DB_FILE)
 
+        cursor = conn.cursor()
+
+        # Delete all invoices
+        cursor.execute("DELETE FROM invoices")
+
+        # Try resetting auto-increment safely
         try:
-            os.remove(DB_FILE)
-        except:
+            cursor.execute(
+                "DELETE FROM sqlite_sequence WHERE name='invoices'"
+            )
+        except sqlite3.OperationalError:
+            # sqlite_sequence may not exist — that's OK
             pass
 
-    Base.metadata.create_all(bind=engine)
-    
+        conn.commit()
+
+        conn.close()
+
+        print("All invoices cleared")
+
+        return True
+
+    except Exception as e:
+
+        print("RESET DATABASE ERROR:", e)
+
+        return False

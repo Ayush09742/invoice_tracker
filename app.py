@@ -9,19 +9,26 @@ from models import (
     mark_invoice_paid,
     delete_invoice
 )
+
 from utils import (
     add_invoice,
+    reset_database,
+    
     get_invoices,
     delete_invoice,
-    generate_invoice_pdf,
+    clear_company_settings,
+    mark_paid,
     export_all_invoices_pdf,
-    get_overdue_days,
     load_company_profile,
     save_company_profile,
     reset_database,
     get_monthly_total,
-    
+    get_client_ledger,
+    export_all_invoices_pdf,
+    get_overdue_days,
+    generate_invoice_pdf,
 )
+
 Base.metadata.create_all(bind=engine)
 
 st.set_page_config(
@@ -76,6 +83,7 @@ def dashboard():
     inv for inv in get_invoices()
     if get_overdue_days(inv) > 0
 ]
+
     total = get_monthly_total()
 
     c1, c2, c3 = st.columns(3)
@@ -98,6 +106,7 @@ def dashboard():
         mime="application/pdf",
         key="download_all_pdf"
     )
+
 
 def add_invoice_section():
 
@@ -152,30 +161,6 @@ def add_invoice_section():
 
         st.rerun()
 
-
-def invoice_list():
-
-    st.header("All Invoices")
-
-    invoices = get_invoices()
-
-    if not invoices:
-
-        st.info("No invoices yet")
-
-        return
-
-def invoice_list():
-
-    st.header("All Invoices")
-
-    invoices = get_invoices()
-
-    if not invoices:
-
-        st.info("No invoices yet")
-
-        return
 
 def invoice_list():
 
@@ -289,6 +274,7 @@ Regards,
         )
 
         st.divider()
+
 def company_settings():
 
     st.header("Company Settings")
@@ -333,9 +319,17 @@ def company_settings():
         )
 
         st.success("Saved")
+        payment_link = st.text_input(
+    "Payment Link",
+    value=profile.get("payment_link"),
+    key="company_payment"
+)
 
 
 def factory_reset():
+
+    import streamlit as st
+    from utils import reset_database, clear_company_settings
 
     st.sidebar.header("System")
 
@@ -344,12 +338,23 @@ def factory_reset():
         key="reset_btn",
     ):
 
-        reset_database()
+        success_db = reset_database()
+        success_profile = clear_company_settings()
 
-        st.success("All data cleared")
+        if success_db and success_profile:
 
-        st.rerun()
+            st.success("System reset successfully")
+            st.cache_data.clear()
+            st.cache_resource.clear()
+            st.rerun()
 
+        else:
+
+            st.error("Reset failed — check terminal for details")
+
+
+
+                    
 
 def main_app():
 
