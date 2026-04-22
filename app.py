@@ -357,7 +357,17 @@ def factory_reset():
                     
 
 def main_app():
+    st.markdown("""
+    <div style='text-align: center; padding: 10px;'>
+        <h1 style='margin-bottom: 0;'>💰 Pennywise</h1>
+        <p style='color: gray; font-size: 16px;'>
+            Invoice + WhatsApp Reminder System
+        </p>
+    </div>
+    <hr>
+""", unsafe_allow_html=True)
 
+   
     factory_reset()
 
     dashboard()
@@ -378,6 +388,16 @@ def main_app():
 
     with tab3:
         company_settings()
+        
+        # ---------- FOOTER ----------
+    st.markdown("<br><hr>", unsafe_allow_html=True)
+
+    st.markdown(
+        "<p style='text-align: center; color: gray;'>"
+        "Pennywise - Invoice + WhatsApp Reminder System"
+        "</p>",
+        unsafe_allow_html=True
+    )
 
 
 if st.session_state.logged_in:
